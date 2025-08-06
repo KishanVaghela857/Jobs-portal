@@ -24,40 +24,48 @@ const Contact = () => {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      setSubmitted(true)
-      setLoading(false)
-      setFormData({ name: '', email: '', subject: '', message: '' })
-    }, 2000)
-  }
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await fetch(`${API_BASE_URL}/api/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error('Failed to submit contact form');
+      setSubmitted(true);
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (err) {
+      alert('Failed to submit contact form');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const contactInfo = [
     {
       icon: <EnvelopeIcon className="h-6 w-6" />,
       title: 'Email',
-      content: 'support@jobportal.com',
-      link: 'mailto:support@jobportal.com'
+      content: 'vaghelakishan857@gmail.com',
+      link: 'mailto:vaghelakishan857@gmail.com'
     },
     {
       icon: <PhoneIcon className="h-6 w-6" />,
       title: 'Phone',
-      content: '+1 (555) 123-4567',
-      link: 'tel:+15551234567'
+      content: '+91 9723405985',
+      link: 'tel:+9723405985'
     },
-    {
-      icon: <MapPinIcon className="h-6 w-6" />,
-      title: 'Address',
-      content: '123 Job Street, Tech City, TC 12345',
-      link: null
-    },
+    // {
+    //   icon: <MapPinIcon className="h-6 w-6" />,
+    //   title: 'Address',
+    //   content: '123 Job Street, Tech City, TC 12345',
+    //   link: null
+    // },
     {
       icon: <ClockIcon className="h-6 w-6" />,
       title: 'Business Hours',
-      content: 'Mon-Fri: 9AM-6PM EST',
+      content: 'Mon-Fri: 9AM-6PM IST',
       link: null
     }
   ]
@@ -160,7 +168,7 @@ const Contact = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition disabled:opacity-50"
+          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition disabled:opacity-50"
         >
           {loading ? 'Sending...' : 'Send Message'}
         </button>

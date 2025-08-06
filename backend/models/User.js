@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
+
 
 const userSchema = new mongoose.Schema({
   role: {
@@ -22,9 +25,23 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
-// Method to compare passwords during login
+// Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Generate JWT token method
+userSchema.methods.generateToken = function() {
+  return jwt.sign(
+    {
+      id: this._id,
+      role: this.role,
+      email: this.email,
+      fullname: this.fullname,
+    },
+    JWT_SECRET,
+    { expiresIn: '1d' }
+  );
 };
 
 module.exports = mongoose.model('User', userSchema);

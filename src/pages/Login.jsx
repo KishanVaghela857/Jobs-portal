@@ -36,7 +36,8 @@ const Login = () => {
       if (result.success) {
         navigate(formData.userType === "jobseeker" ? "/jobseeker-dashboard" : "/employer-dashboard");
       } else {
-        setError(result.error || "Login failed");
+        setError(result.error || "Login failed")
+        setLoading(false);
       }
     } catch (err) {
       console.error(err);

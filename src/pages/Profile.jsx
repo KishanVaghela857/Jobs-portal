@@ -5,7 +5,6 @@ import { PencilIcon } from '@heroicons/react/24/outline'
 const Profile = () => {
   const { user, updateProfile } = useAuth()
 
-  // Initialize formData from user once user is loaded
   const [formData, setFormData] = useState({
     fullname: '',
     email: '',
@@ -42,94 +41,82 @@ const Profile = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile</h1>
-        <p className="text-gray-600">Manage your account information</p>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900">Your Profile</h1>
+          <p className="text-gray-500 mt-2">Keep your account information up-to-date</p>
+        </div>
+        {/* <button
+          onClick={() => setIsEditing(!isEditing)}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+        >
+          <PencilIcon className="h-5 w-5 mr-2" />
+          {isEditing ? 'Cancel' : 'Edit Profile'}
+        </button> */}
       </div>
 
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Personal Information</h2>
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="btn-secondary flex items-center"
-          >
-            <PencilIcon className="h-4 w-4 mr-2" />
-            {isEditing ? 'Cancel' : 'Edit Profile'}
-          </button>
-        </div>
-
+      <div className="bg-white rounded-lg shadow p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
               {isEditing ? (
                 <input
                   type="text"
                   name="fullname"
                   value={formData.fullname}
                   onChange={handleChange}
-                  className="input-field"
-                  required
+                  className="w-full border rounded-md px-4 py-2"
                 />
               ) : (
-                <p className="text-gray-900">{user?.fullname || 'Not provided'}</p>
+                <p className="text-gray-900 text-lg">{user?.fullname || 'Not provided'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               {isEditing ? (
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className="input-field"
-                  required
+                  className="w-full border rounded-md px-4 py-2"
                 />
               ) : (
-                <p className="text-gray-900">{user?.email || 'Not provided'}</p>
+                <p className="text-gray-900 text-lg">{user?.email || 'Not provided'}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
               {isEditing ? (
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="input-field"
+                  className="w-full border rounded-md px-4 py-2"
                 />
               ) : (
-                <p className="text-gray-900">{user?.phone || 'Not provided'}</p>
+                <p className="text-gray-900 text-lg">{user?.phone || 'Not provided'}</p>
               )}
             </div>
 
             {user?.role === 'employer' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
                 {isEditing ? (
                   <input
                     type="text"
                     name="companyname"
                     value={formData.companyname}
                     onChange={handleChange}
-                    className="input-field"
+                    className="w-full border rounded-md px-4 py-2"
                   />
                 ) : (
-                  <p className="text-gray-900">{user?.companyname || 'Not provided'}</p>
+                  <p className="text-gray-900 text-lg">{user?.companyname || 'Not provided'}</p>
                 )}
               </div>
             )}
@@ -140,11 +127,14 @@ const Profile = () => {
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="btn-secondary"
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
               >
                 Cancel
               </button>
-              <button type="submit" className="btn-primary">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              >
                 Save Changes
               </button>
             </div>

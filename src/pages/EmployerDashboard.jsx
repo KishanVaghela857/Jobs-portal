@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
+import { MapPinIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../context/AuthContext'
-import { 
-  BuildingOfficeIcon, 
+import {
+  BuildingOfficeIcon,
   BriefcaseIcon,
   UserGroupIcon,
   PlusIcon,
   PencilIcon,
   TrashIcon
 } from '@heroicons/react/24/outline'
+import { Link } from 'react-router-dom';
 
 const EmployerDashboard = () => {
   const { user } = useAuth()
@@ -17,38 +19,119 @@ const EmployerDashboard = () => {
   const [applicants, setApplicants] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState(null)
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [selectedJobType, setSelectedJobType] = useState('');
+  const [Experience, setSelectedExperience] = useState('');
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+  const jobTypes = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote'];
+  const experience = ['Entry Level', '1-3 years', '3-5 years', '5+ years', 'Remote'];
+  const skillOptions = ['JavaScript', 'React', 'Node.js', 'CSS', 'HTML', 'Python', 'AWS'];
 
-        // Replace these with your real API endpoints
-        const jobsResponse = await fetch('/api/employer/jobs')
-        if (!jobsResponse.ok) throw new Error('Failed to fetch jobs')
-        const jobsData = await jobsResponse.json()
+  const [jobForm, setJobForm] = useState({
+    title: '',
+    description: '',
+    location: '',
+    salary: '',
+    type: '',
+    experience: '',
+    skills: '',  // comma separated string
+  })
 
-        const applicantsResponse = await fetch('/api/employer/applicants')
-        if (!applicantsResponse.ok) throw new Error('Failed to fetch applicants')
-        const applicantsData = await applicantsResponse.json()
+  const employerId = user?._id
 
-        setPostedJobs(jobsData)
-        setApplicants(applicantsData)
-        setLoading(false)
-      } catch (err) {
-        setError(err.message)
-        setLoading(false)
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+  
+      const headers = user.token ? { Authorization: `Bearer ${user.token}` } : {};
+  
+      const res = await fetch(`/api/jobs/employer/${employerId}`, { headers });
+      const data = await res.json();
+      console.log('Jobs API response:', data);
+  
+      if (Array.isArray(data)) {
+        setPostedJobs(data);
+      } else if (data.jobs && Array.isArray(data.jobs)) {
+        setPostedJobs(data.jobs);
+      } else {
+        setPostedJobs([]);
       }
+  
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+  
+  useEffect(() => {
+    if (user?._id) {
+      fetchDashboardData();
+    }
+  }, [user])
+
+  const [showForm, setShowForm] = useState(false)
+
+  const handlePostNewJob = () => setShowForm(true)
+
+  const handleFormChange = (e) => {
+    setJobForm({ ...jobForm, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmitJob = async () => {
+    const savedUser = JSON.parse(localStorage.getItem('user'));
+    const token = user?.token || savedUser?.token;
+    const userId = user?._id || savedUser?._id;
+
+    if (!token) {
+      alert('Authentication token missing. Please login again.');
+      return;
     }
 
-    fetchDashboardData()
-  }, [])
+    const skillsArray = jobForm.skills.split(',').map(s => s.trim()).filter(Boolean);
 
-  // Placeholder action handlers
-  const handlePostNewJob = () => {
-    alert('Open job posting form or modal here.')
-  }
+    const response = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        ...jobForm,
+        skills: skillsArray,
+        employerId: userId,
+        postedDate: new Date().toISOString(),
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      alert(data.message || 'Failed to post job');
+      return;
+    }
+
+    await fetchDashboardData();
+
+    setShowForm(false);
+    setJobForm({
+      title: '',
+      description: '',
+      location: '',
+      salary: '',
+      type: '',
+      experience: '',
+      skills: '',
+    });
+    setSelectedSkills([]);
+    setSelectedJobType('');
+    setSelectedExperience('');
+
+    alert('Job posted successfully');
+  };
 
   const handleEditJob = (jobId) => {
     alert(`Open edit form for job ID: ${jobId}`)
@@ -59,244 +142,297 @@ const EmployerDashboard = () => {
     if (!confirmDelete) return
 
     try {
-      // Replace with your DELETE API call
-      // await fetch(`/api/employer/jobs/${jobId}`, { method: 'DELETE' })
+      const headers = user.token ? { Authorization: `Bearer ${user.token}` } : {}
 
-      // For demo, just filter out the job locally
-      setPostedJobs(prev => prev.filter(job => job.id !== jobId))
+      const response = await fetch(`/api/employer/jobs/${jobId}`, {
+        method: 'DELETE',
+        headers,
+      })
+
+      const text = await response.text()
+      if (!response.ok) throw new Error(`Failed to delete job: ${text}`)
+
+      setPostedJobs(prev => prev.filter(job => job._id !== jobId))
       alert('Job deleted successfully.')
     } catch (error) {
-      alert('Failed to delete job.')
+      alert(error.message || 'Failed to delete job.')
     }
   }
 
-  if (loading) return <div className="text-center py-10 text-gray-600">Loading...</div>
-  if (error) return <div className="text-center py-10 text-red-600">{error}</div>
-
-  // Count for Overview tab
-  const activeJobsCount = postedJobs.length
-  const totalApplicantsCount = applicants.length
-  const profileViewsCount = 5 // You can fetch or calculate this dynamically
-  const interviewsCount = 3    // Same here
-
-  // Tabs config
   const tabs = [
     { id: 'overview', name: 'Overview', icon: BuildingOfficeIcon },
     { id: 'jobs', name: 'Posted Jobs', icon: BriefcaseIcon },
     { id: 'applicants', name: 'Applicants', icon: UserGroupIcon },
-    { id: 'profile', name: 'Company Profile', icon: BuildingOfficeIcon }
+    { id: 'profile', name: 'Company Profile', icon: BuildingOfficeIcon },
   ]
 
-  // --- Render functions ---
+  const handleSkillToggle = (skill) => {
+    setSelectedSkills(prev =>
+      prev.includes(skill)
+        ? prev.filter(s => s !== skill)
+        : [...prev, skill]
+    );
+    setJobForm(form => {
+      const newSkills = selectedSkills.includes(skill)
+        ? selectedSkills.filter(s => s !== skill)
+        : [...selectedSkills, skill];
+      return {
+        ...form,
+        skills: newSkills.join(', ')
+      }
+    });
+  };
+
+  const handleJobTypeChange = (e) => {
+    setSelectedJobType(e.target.value);
+    setJobForm(form => ({ ...form, type: e.target.value }));
+  };
+  const handleExperienceChange = (e) => {
+    setSelectedExperience(e.target.value);
+    setJobForm(form => ({ ...form, experience: e.target.value }));
+  };
 
   const renderOverview = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-primary-600 mb-2">{activeJobsCount}</div>
-          <div className="text-gray-600">Active Jobs</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-green-600 mb-2">{totalApplicantsCount}</div>
-          <div className="text-gray-600">Total Applicants</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-blue-600 mb-2">{profileViewsCount}</div>
-          <div className="text-gray-600">Profile Views</div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-yellow-600 mb-2">{interviewsCount}</div>
-          <div className="text-gray-600">Interviews</div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Applications</h3>
-          <div className="space-y-3">
-            {applicants.slice(0, 3).map(applicant => (
-              <div key={applicant.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-gray-900">{applicant.name}</h4>
-                  <p className="text-sm text-gray-600">{applicant.jobTitle}</p>
-                  <p className="text-xs text-gray-500">
-                    Applied {new Date(applicant.appliedDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  applicant.status === 'New' ? 'bg-blue-100 text-blue-800' :
-                  applicant.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-green-100 text-green-800'
-                }`}>
-                  {applicant.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Job Postings</h3>
-          <div className="space-y-3">
-            {postedJobs.slice(0, 3).map(job => (
-              <div key={job.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                <div>
-                  <h4 className="font-medium text-gray-900">{job.title}</h4>
-                  <p className="text-sm text-gray-600">{job.location} • {job.type}</p>
-                  <p className="text-xs text-gray-500">
-                    Posted {new Date(job.postedDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-primary-600">{job.applications} applications</div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    job.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {job.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    <div>
+      <h2 className="text-xl font-semibold mb-4">Dashboard Overview</h2>
+      <p>Welcome to your dashboard. Use the tabs above to manage jobs, view applicants, and update your company profile.</p>
     </div>
   )
 
   const renderPostedJobs = () => (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Posted Jobs</h3>
-        <button className="btn-primary flex items-center" onClick={handlePostNewJob}>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Your Posted Jobs</h2>
+        <button
+          onClick={handlePostNewJob}
+          className="flex items-center bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
           <PlusIcon className="h-4 w-4 mr-2" />
-          Post New Job
+          Add Job Post
         </button>
       </div>
-
-      {postedJobs.map(job => (
-        <div key={job.id} className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-              <p className="text-gray-600">{job.location} • {job.type}</p>
-              <p className="text-sm text-gray-500">
-                Posted {new Date(job.postedDate).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="text-lg font-semibold text-primary-600">{job.applications}</div>
-                <div className="text-sm text-gray-500">applications</div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  job.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {job.status}
-                </span>
-                <button className="text-primary-600 hover:text-primary-700" onClick={() => handleEditJob(job.id)}>
-                  <PencilIcon className="h-4 w-4" />
+  
+      {showForm && (
+        <div className="mb-6 p-6 bg-white rounded-lg shadow-md border border-gray-200 max-w-xl mx-auto">
+          <input
+            name="title"
+            placeholder="Job Title"
+            value={jobForm.title}
+            onChange={handleFormChange}
+            className="block w-full mb-4 p-2 border rounded"
+          />
+          <textarea
+            name="description"
+            placeholder="Description"
+            value={jobForm.description}
+            onChange={handleFormChange}
+            className="block w-full mb-4 p-2 border rounded"
+          />
+          <input
+            name="location"
+            placeholder="Location"
+            value={jobForm.location}
+            onChange={handleFormChange}
+            className="block w-full mb-4 p-2 border rounded"
+          />
+          <input
+            name="salary"
+            placeholder="Salary (e.g., 60000-80000)"
+            value={jobForm.salary}
+            onChange={handleFormChange}
+            className="block w-full mb-4 p-2 border rounded"
+          />
+  
+          {/* Job Type Dropdown */}
+          <label className="block mb-1 font-medium text-gray-700">Job Type</label>
+          <select
+            value={selectedJobType}
+            onChange={handleJobTypeChange}
+            className="block w-full mb-4 p-2 border rounded"
+          >
+            <option value="" disabled>Select job type</option>
+            {jobTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+  
+          {/* Skills Multi-select */}
+          <label className="block mb-1 font-medium text-gray-700">Skills</label>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {skillOptions.map(skill => {
+              const isSelected = selectedSkills.includes(skill);
+              return (
+                <button
+                  key={skill}
+                  type="button"
+                  onClick={() => handleSkillToggle(skill)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    isSelected
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-gray-100 text-gray-700 border-transparent hover:bg-gray-200'
+                  }`}
+                >
+                  {skill}
                 </button>
-                <button className="text-red-600 hover:text-red-700" onClick={() => handleDeleteJob(job.id)}>
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+              );
+            })}
           </div>
+  
+          <label className="block mb-1 font-medium text-gray-700">Experience</label>
+<select
+  value={Experience}
+  onChange={handleExperienceChange}
+  className="block w-full mb-4 p-2 border rounded"
+>
+  <option value="" disabled>Select Experience</option>
+  {experience.map(Etype => (
+    <option key={Etype} value={Etype}>{Etype}</option>
+  ))}
+</select>
+  
+          <button
+            onClick={handleSubmitJob}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-colors"
+          >
+            Submit Job
+          </button>
         </div>
-      ))}
+      )}
+  
+      {postedJobs.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 mb-4">You have not posted any jobs yet.</p>
+          <button
+            onClick={handlePostNewJob}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium"
+          >
+            Post Your First Job
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {postedJobs.map((job) => (
+            <div
+              key={job._id}
+              className="bg-white shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 border border-gray-100"
+            >
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                {/* Left Side */}
+                <div className="flex-1">
+                  <h2 className="text-2xl font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                    <Link to={`/job/${job._id}`}>{job.title}</Link>
+                  </h2>
+                  <div className="text-gray-500 text-sm mt-1 flex items-center flex-wrap gap-2">
+                    <span className="font-medium">{job.company || job.employerName || 'Company'}</span>
+                    <span className="text-gray-400">•</span>
+                    <MapPinIcon className="h-4 w-4 text-gray-400" />
+                    <span>{job.location || 'Location not specified'}</span>
+                  </div>
+  
+                  <p className="text-gray-600 mt-3 mb-4 line-clamp-2">{job.description || 'No description provided'}</p>
+  
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {job.type && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-medium">
+                        {job.type}
+                      </span>
+                    )}
+                    {job.experience && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">
+                        {job.experience}
+                      </span>
+                    )}
+                    {job.salary && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 font-medium">
+                        {job.salary}
+                      </span>
+                    )}
+                  </div>
+  
+                  {/* Skills */}
+                  <div className="flex flex-wrap gap-1">
+                    {(job.skills || []).slice(0, 4).map((skill, index) => (
+                      <span
+                        key={index}
+                        className="inline-block px-2 py-1 rounded-full bg-gray-100 text-gray-800 text-xs"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                    {(job.skills && job.skills.length > 4) && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                        +{job.skills.length - 4} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+  
+                {/* Right Side */}
+                <div className="flex flex-col justify-between items-end text-right">
+                  <span className="text-sm text-gray-400">
+                    Posted: {job.postedDate ? new Date(job.postedDate).toLocaleDateString() : 'Unknown'}
+                  </span>
+                  <Link
+                    to={`/job/${job._id}`}
+                    className="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors"
+                  >
+                    View Details
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  )
+  );
 
   const renderApplicants = () => (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">All Applicants</h3>
-      
-      {applicants.map(applicant => (
-        <div key={applicant.id} className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{applicant.name}</h3>
-              <p className="text-gray-600">{applicant.email}</p>
-              <p className="text-sm text-gray-500">
-                Applied for {applicant.jobTitle} on {new Date(applicant.appliedDate).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                applicant.status === 'New' ? 'bg-blue-100 text-blue-800' :
-                applicant.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-green-100 text-green-800'
-              }`}>
-                {applicant.status}
-              </span>
-              <button className="btn-secondary text-sm">View Profile</button>
-              <button className="btn-primary text-sm">Contact</button>
-            </div>
-          </div>
-        </div>
-      ))}
+    <div>
+      <h2 className="text-xl font-semibold mb-4">Applicants</h2>
+      {applicants.length === 0 ? (
+        <p className="text-gray-500">No applicants found for your jobs yet.</p>
+      ) : (
+        <ul className="space-y-4">
+          {applicants.map((applicant) => (
+            <li key={applicant.id} className="border p-4 rounded shadow-sm">
+              <p className="font-semibold">{applicant.fullname || 'No name provided'}</p>
+              <p className="text-sm text-gray-600">{applicant.email || 'No email provided'}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 
   const renderProfile = () => (
-    <div className="card">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Company Profile</h3>
-        <button className="btn-secondary text-sm">
-          <PencilIcon className="h-4 w-4 mr-1" />
-          Edit Profile
-        </button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
-          <p className="text-gray-900">{user?.companyName || 'Not provided'}</p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Contact Person</label>
-          <p className="text-gray-900">{user?.name || 'Not provided'}</p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-          <p className="text-gray-900">{user?.email}</p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-          <p className="text-gray-900">{user?.phone || 'Not provided'}</p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
-          <p className="text-gray-900">
-            {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-          </p>
-        </div>
-      </div>
+    <div>
+      <h2 className="text-xl font-semibold mb-4">Company Profile</h2>
+      <p>This section is under construction.</p>
     </div>
   )
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Employer Dashboard</h1>
-        <p className="text-gray-600">Welcome back, {user?.name}!</p>
+        <p className="text-gray-600">Welcome back, {user?.name || 'User'}!</p>
       </div>
 
-      {/* Tab Navigation */}
       <div className="border-b border-gray-200 mb-8">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           {tabs.map(tab => {
             const Icon = tab.icon
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center ${
-                  activeTab === tab.id
+                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center focus:outline-none ${activeTab === tab.id
                     ? 'border-primary-500 text-primary-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
               >
                 <Icon className="h-4 w-4 mr-2" />
                 {tab.name}
@@ -306,7 +442,6 @@ const EmployerDashboard = () => {
         </nav>
       </div>
 
-      {/* Tab Content */}
       <div>
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'jobs' && renderPostedJobs()}

@@ -7,7 +7,9 @@ export const AuthProvider = ({ children }) => {
   // Initialize from localStorage
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (!savedUser) return null;
+    const parsed = JSON.parse(savedUser);
+    return { ...parsed, _id: parsed._id || parsed.id };
   });
 
   const login = async (email, password, role) => {
@@ -17,8 +19,17 @@ export const AuthProvider = ({ children }) => {
         password,
         role,
       });
-      setUser(res.data.user);
-      localStorage.setItem("user", JSON.stringify(res.data.user)); // persist user
+  
+      // Merge token inside user object
+      const normalizedUser = {
+        ...res.data.user,
+        token: res.data.token,  // save token here!
+        _id: res.data.user._id || res.data.user.id,
+      };
+  
+      setUser(normalizedUser);
+      localStorage.setItem("user", JSON.stringify(normalizedUser)); // persist user + token together
+  
       return { success: true, data: res.data };
     } catch (err) {
       return {
@@ -27,6 +38,7 @@ export const AuthProvider = ({ children }) => {
       };
     }
   };
+  
 
   const register = async (formData) => {
     try {

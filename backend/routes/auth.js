@@ -47,7 +47,6 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     let { email, password, role } = req.body;
-
     if (!email || !password || !role) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -66,8 +65,12 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // Generate token
+    const token = user.generateToken();
+
     res.status(200).json({
       message: 'Login successful',
+      token,
       user: {
         id: user._id,
         fullname: user.fullname,
@@ -82,5 +85,6 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 module.exports = router;

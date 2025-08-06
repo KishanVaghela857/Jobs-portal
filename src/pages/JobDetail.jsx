@@ -5,16 +5,17 @@ import { useApplications } from '../context/ApplicationsContext';
 import {
   MapPinIcon,
   BriefcaseIcon,
-  CurrencyDollarIcon,
   CalendarIcon,
   BuildingOfficeIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
 
+const API_BASE_URL = 'http://localhost:5000';
+
 const JobDetail = () => {
   const { id } = useParams();
   const { user } = useAuth();
-  const { applyToJob, hasApplied } = useApplications();
+  const { hasApplied } = useApplications();
 
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,35 +25,19 @@ const JobDetail = () => {
     resume: null,
   });
   const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Replace with real API call
     async function fetchJob() {
       setLoading(true);
+      setError(null);
       try {
-        // e.g. const res = await axios.get(`/api/jobs/${id}`)
-        // setJob(res.data);
-
-        // Mock data:
-        const mockJob = {
-          id: '1',
-          title: 'Senior React Developer',
-          company: 'TechCorp Inc.',
-          location: 'New York, NY',
-          type: 'Full-time',
-          salary: '$80,000 - $120,000',
-          experience: '3-5 years',
-          description: `We are looking for a senior React developer...`,
-          postedDate: '2024-01-15',
-          skills: ['React', 'JavaScript', 'TypeScript', 'Node.js', 'Redux', 'Git'],
-          benefits: ['Health Insurance', '401k', 'Remote Work', 'Flexible Hours', 'Professional Development'],
-          companyDescription: 'TechCorp Inc. is a leading technology company...',
-          contactEmail: 'hr@techcorp.com',
-          contactPhone: '+1 (555) 123-4567',
-        };
-        setJob(mockJob);
+        const res = await fetch(`${API_BASE_URL}/api/jobs/job/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch job');
+        const data = await res.json();
+        setJob(data);
       } catch (error) {
-        console.error('Failed to load job:', error);
+        setError('Failed to load job details. Please try again later.');
         setJob(null);
       }
       setLoading(false);
@@ -84,18 +69,31 @@ const JobDetail = () => {
     setApplying(true);
 
     try {
-      // Simulate API call to submit application here, e.g.:
-      // const formData = new FormData();
-      // formData.append('coverLetter', application.coverLetter);
-      // formData.append('resume', application.resume);
-      // formData.append('jobId', job.id);
-      // await axios.post('/api/apply', formData);
+      const formData = new FormData();
+      formData.append('userId', user._id);
+      formData.append('jobId', job._id || job.id);
+      formData.append('coverLetter', application.coverLetter);
+      formData.append('resume', application.resume);
 
-      // Store application locally for demo:
-      applyToJob(job.id, { coverLetter: application.coverLetter, resume: application.resume.name });
+      const res = await fetch(`${API_BASE_URL}/api/dashboard/apply-job`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          ...(user?.token && { Authorization: `Bearer ${user.token}` }),
+          // Note: Do NOT set Content-Type header when sending FormData!
+        },
+      });
 
+      if (!res.ok) throw new Error('Failed to submit application');
+
+      // Show success modal
       setShowModal(true);
-      setApplication({ coverLetter: '', resume: null });
+
+      // Clear form inputs after successful submit
+      setApplication({
+        coverLetter: '',
+        resume: null,
+      });
     } catch (error) {
       alert('Failed to submit application');
       console.error(error);
@@ -112,6 +110,14 @@ const JobDetail = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-10 text-red-600">
+        {error || 'Failed to load job details. Please try again later.'}
+      </div>
+    );
+  }
+
   if (!job) {
     return (
       <div className="text-center py-12">
@@ -123,12 +129,15 @@ const JobDetail = () => {
     );
   }
 
-  const alreadyApplied = hasApplied(job.id);
+  const alreadyApplied = hasApplied(job._id);
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <Link to="/jobs" className="text-primary-600 hover:text-primary-500 mb-4 inline-block">
+        <Link
+          to="/jobs"
+          className="text-primary-600 hover:text-primary-500 mb-4 inline-block"
+        >
           ← Back to Jobs
         </Link>
       </div>
@@ -140,14 +149,20 @@ const JobDetail = () => {
           <div className="card">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{job.title}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {job.title || 'No title provided'}
+                </h1>
                 <div className="flex items-center text-gray-600 mb-4">
                   <BuildingOfficeIcon className="h-5 w-5 mr-2" />
-                  <span className="font-medium">{job.company}</span>
+                  <span className="font-medium">
+                    {job.company || job.employerName || 'Unknown Company'}
+                  </span>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-primary-600">{job.salary}</div>
+                <div className="text-2xl font-bold text-primary-600">
+                  {job.salary}
+                </div>
                 <div className="text-sm text-gray-500">Annual Salary</div>
               </div>
             </div>
@@ -167,12 +182,14 @@ const JobDetail = () => {
               </div>
               <div className="flex items-center text-gray-600">
                 <CalendarIcon className="h-5 w-5 mr-2" />
-                <span>Posted {new Date(job.postedDate).toLocaleDateString()}</span>
+                <span>
+                  Posted {new Date(job.postedDate).toLocaleDateString()}
+                </span>
               </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {job.skills.map((skill, index) => (
+              {(job.skills || []).map((skill, index) => (
                 <span
                   key={index}
                   className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800"
@@ -185,7 +202,9 @@ const JobDetail = () => {
 
           {/* Job Description */}
           <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Job Description</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Job Description
+            </h2>
             <div className="prose max-w-none">
               {job.description.split('\n').map((paragraph, index) => (
                 <p key={index} className="text-gray-700 mb-4">
@@ -197,8 +216,12 @@ const JobDetail = () => {
 
           {/* Company Description */}
           <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">About {job.company}</h2>
-            <p className="text-gray-700">{job.companyDescription}</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              About {job.company || job.employerName || 'the company'}
+            </h2>
+            <p className="text-gray-700">
+              {job.companyDescription || 'No company description provided.'}
+            </p>
           </div>
         </div>
 
@@ -207,7 +230,9 @@ const JobDetail = () => {
           {/* Apply Section */}
           {user?.role === 'jobseeker' ? (
             <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Apply for this position</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Apply for this position
+              </h3>
 
               {alreadyApplied ? (
                 <div className="p-4 bg-green-100 border border-green-300 rounded text-green-700">
@@ -216,7 +241,10 @@ const JobDetail = () => {
               ) : (
                 <form onSubmit={handleApply} className="space-y-4">
                   <div>
-                    <label htmlFor="coverLetter" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="coverLetter"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Cover Letter
                     </label>
                     <textarea
@@ -232,7 +260,10 @@ const JobDetail = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="resume" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="resume"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Resume/CV
                     </label>
                     <input
@@ -261,7 +292,9 @@ const JobDetail = () => {
             </div>
           ) : !user ? (
             <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Apply for this position</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Apply for this position
+              </h3>
               <p className="text-gray-600 mb-4">Sign in to apply for this job</p>
               <Link to="/login" className="btn-primary w-full text-center">
                 Sign In to Apply
@@ -271,7 +304,9 @@ const JobDetail = () => {
 
           {/* Job Details */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Job Details</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Job Details
+            </h3>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-600">Job Type:</span>
@@ -296,7 +331,7 @@ const JobDetail = () => {
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Benefits</h3>
             <ul className="space-y-2">
-              {job.benefits.map((benefit, index) => (
+              {(job.benefits || []).map((benefit, index) => (
                 <li key={index} className="flex items-center text-gray-700">
                   <span className="w-2 h-2 bg-primary-500 rounded-full mr-3"></span>
                   {benefit}
@@ -307,17 +342,25 @@ const JobDetail = () => {
 
           {/* Contact */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Contact Information
+            </h3>
             <div className="space-y-2">
               <div className="flex items-center text-gray-700">
                 <span className="font-medium mr-2">Email:</span>
-                <a href={`mailto:${job.contactEmail}`} className="text-primary-600 hover:text-primary-500">
+                <a
+                  href={`mailto:${job.contactEmail}`}
+                  className="text-primary-600 hover:text-primary-500"
+                >
                   {job.contactEmail}
                 </a>
               </div>
               <div className="flex items-center text-gray-700">
                 <span className="font-medium mr-2">Phone:</span>
-                <a href={`tel:${job.contactPhone}`} className="text-primary-600 hover:text-primary-500">
+                <a
+                  href={`tel:${job.contactPhone}`}
+                  className="text-primary-600 hover:text-primary-500"
+                >
                   {job.contactPhone}
                 </a>
               </div>
@@ -330,11 +373,15 @@ const JobDetail = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 space-y-4">
-            <h3 className="text-xl font-semibold text-green-700">Application Submitted!</h3>
+            <h3 className="text-xl font-semibold text-green-700">
+              Application Submitted!
+            </h3>
             <p>Your application has been successfully submitted.</p>
             <div>
               <strong>Cover Letter:</strong>
-              <p className="whitespace-pre-wrap bg-gray-100 p-3 rounded mt-2">{application.coverLetter}</p>
+              <p className="whitespace-pre-wrap bg-gray-100 p-3 rounded mt-2">
+                {application.coverLetter}
+              </p>
             </div>
             <div>
               <strong>Resume File:</strong> {application.resume?.name || 'N/A'}
