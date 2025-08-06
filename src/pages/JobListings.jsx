@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import {
   MagnifyingGlassIcon,
   MapPinIcon,
-  BriefcaseIcon,
 } from '@heroicons/react/24/outline'
 
 const JobListings = () => {
@@ -21,6 +20,12 @@ const JobListings = () => {
     location: searchParams.get('location') || '',
     type: searchParams.get('type') || '',
     experience: searchParams.get('experience') || '',
+  })
+
+  const [stats, setStats] = useState({
+    totalJobs: 0,
+    totalApplications: 0,
+    successRate: 0,
   })
 
   useEffect(() => {
@@ -74,6 +79,24 @@ const JobListings = () => {
     fetchJobs()
   }, [filters, user, API_BASE_URL])
 
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch('/api/dashboard/stats')
+        if (!res.ok) throw new Error('Failed to fetch stats')
+        const data = await res.json()
+        let successRate = 0
+        if (data.totalApplications && data.totalJobs) {
+          successRate = Math.min(100, Math.round((data.totalApplications / data.totalJobs) * 100))
+        }
+        setStats({ ...data, successRate })
+      } catch {
+        setError('Unable to load stats at the moment. Please try again later.')
+      }
+    }
+    fetchStats()
+  }, [])
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target
     setFilters((prev) => ({ ...prev, [name]: value }))
@@ -106,7 +129,9 @@ const JobListings = () => {
   return (
     <div className="bg-gray-100 min-h-screen">
       <div className="max-w-7xl mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-4">Work From Home Jobs</h1>
+        <h1 className="text-3xl font-bold mb-4">
+          Available Jobs ({stats.totalJobs.toLocaleString()})
+        </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar Filters */}
@@ -154,8 +179,6 @@ const JobListings = () => {
                 </div>
               ))}
             </div>
-
-            {/* Add more sidebar filters here if needed */}
           </aside>
 
           {/* Job Listing Section */}

@@ -54,7 +54,7 @@ const Home = () => {
     'Full Time Jobs'
   ]
 
-  const featuredCompanies = ['Zomato', 'Paytm', 'BigBasket', 'Tech Mahindra', 'Flipkart']
+  const featuredCompanies = ['JobsPortal', 'VanaGrow']
 
   const testimonials = [
     { msg: 'Landed my dream job in just 3 weeks!', author: 'Anita Sharma' },
