@@ -43,6 +43,12 @@ const EmployerDashboard = () => {
   const employerId = user?._id
 
   const fetchDashboardData = async () => {
+
+    
+  const token = localStorage.getItem('user')
+  ? JSON.parse(localStorage.getItem('user')).token
+  : null;
+
     try {
       setLoading(true);
       setError(null);
@@ -51,7 +57,7 @@ const EmployerDashboard = () => {
   
       const res = await fetch(`/api/jobs/employer/${employerId}`, { headers });
       const data = await res.json();
-      console.log('Jobs API response:', data);
+      // console.log('Jobs API response:', data);
   
       if (Array.isArray(data)) {
         setPostedJobs(data);
@@ -67,10 +73,48 @@ const EmployerDashboard = () => {
       setLoading(false);
     }
   }
+
+  const fetchApplicants = async () => {
+    try {
+      // Get user from localStorage
+      const userFromStorage = localStorage.getItem('user')
+        ? JSON.parse(localStorage.getItem('user'))
+        : null;
+  
+      if (!userFromStorage || !userFromStorage.token || !userFromStorage.id) {
+        throw new Error("Token or user ID not found in localStorage");
+      }
+  
+      const token = userFromStorage.token;  // <-- Add this line
+  
+      const backendUrl = 'http://localhost:5000'; 
+  
+      const response = await fetch(`${backendUrl}/api/applications/employer/${userFromStorage.id}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(user?.token && { Authorization: `Bearer ${user.token}` }),
+        },
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Server Error:", errorData);
+        throw new Error(errorData.message || 'Failed to fetch applicants');
+      }
+  
+      const data = await response.json();
+      setApplicants(data);
+    } catch (err) {
+      console.error("Fetch Applicants Error:", err.message);
+      setApplicants([]);
+    }
+  };
+  
   
   useEffect(() => {
     if (user?._id) {
       fetchDashboardData();
+      fetchApplicants();
     }
   }, [user])
 
@@ -81,6 +125,7 @@ const EmployerDashboard = () => {
   const handleFormChange = (e) => {
     setJobForm({ ...jobForm, [e.target.name]: e.target.value })
   }
+
 
   const handleSubmitJob = async () => {
     const savedUser = JSON.parse(localStorage.getItem('user'));
@@ -392,19 +437,32 @@ const EmployerDashboard = () => {
     <div>
       <h2 className="text-xl font-semibold mb-4">Applicants</h2>
       {applicants.length === 0 ? (
-        <p className="text-gray-500">No applicants found for your jobs yet.</p>
+        <p className="text-gray-500">No applicants have applied to your jobs yet.</p>
       ) : (
-        <ul className="space-y-4">
-          {applicants.map((applicant) => (
-            <li key={applicant.id} className="border p-4 rounded shadow-sm">
-              <p className="font-semibold">{applicant.fullname || 'No name provided'}</p>
-              <p className="text-sm text-gray-600">{applicant.email || 'No email provided'}</p>
-            </li>
-          ))}
-        </ul>
+        applicants.map((jobApplicationGroup, index) => (
+          <div key={index} className="mb-6 bg-white p-4 rounded shadow">
+            <h3 className="text-lg font-semibold mb-2">
+              Job: {jobApplicationGroup.jobTitle || 'Untitled Job'}
+            </h3>
+            {jobApplicationGroup.applicants.length === 0 ? (
+              <p className="text-sm text-gray-500">No applicants for this job.</p>
+            ) : (
+              <ul className="space-y-3">
+                {jobApplicationGroup.applicants.map((applicant, idx) => (
+                  <li key={idx} className="border border-gray-200 rounded p-3">
+                    <p className="font-medium text-gray-800">{applicant.fullname}</p>
+                    <p className="text-sm text-gray-600">{applicant.email}</p>
+                    <p className="text-sm text-gray-600">Resume: <a href={applicant.resumeUrl} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">View</a></p>
+                    <p className="text-sm text-gray-600">Applied on: {new Date(applicant.appliedAt).toLocaleDateString()}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))
       )}
     </div>
-  )
+  );
 
   const renderProfile = () => (
     <div>

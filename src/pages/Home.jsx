@@ -123,6 +123,70 @@ const Home = () => {
         </div>
       </section>
 
+      {/* YouTube Courses: CodeWithHarry & Apna College */}
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-6">
+          <h2 className="text-2xl font-bold text-center mb-10">Top YouTube Courses</h2>
+
+          {/* CodeWithHarry Courses */}
+          <div className="mb-12">
+            {/* <h3 className="text-xl font-semibold mb-4 text-blue-600">CodeWithHarry</h3> */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <a href="https://www.youtube.com/watch?v=1BsVhumGlNc" target="_blank" rel="noopener noreferrer" className="bg-gray-50 rounded-xl shadow hover:shadow-lg overflow-hidden transition">
+                <img src="https://img.youtube.com/vi/1BsVhumGlNc/hqdefault.jpg" alt="HTML Course" className="w-full" />
+                <div className="p-4">
+                  <h4 className="font-semibold">HTML Full Course</h4>
+                  <p className="text-sm text-gray-600">Start web dev with this beginner HTML course.</p>
+                </div>
+              </a>
+              <a href="https://www.youtube.com/watch?v=ESnrn1kAD4E" target="_blank" rel="noopener noreferrer" className="bg-gray-50 rounded-xl shadow hover:shadow-lg overflow-hidden transition">
+                <img src="https://img.youtube.com/vi/ESnrn1kAD4E/hqdefault.jpg" alt="CSS Course" className="w-full" />
+                <div className="p-4">
+                  <h4 className="font-semibold">CSS in Hindi</h4>
+                  <p className="text-sm text-gray-600">Master styling with this detailed CSS course.</p>
+                </div>
+              </a>
+              <a href="https://www.youtube.com/watch?v=ZzaPdXTrSb8" target="_blank" rel="noopener noreferrer" className="bg-gray-50 rounded-xl shadow hover:shadow-lg overflow-hidden transition">
+                <img src="https://img.youtube.com/vi/ZzaPdXTrSb8/hqdefault.jpg" alt="JavaScript Course" className="w-full" />
+                <div className="p-4">
+                  <h4 className="font-semibold">C++ for Beginners</h4>
+                  <p className="text-sm text-gray-600">Complete JS course with hands-on examples.</p>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          {/* Apna College Courses */}
+          <div>
+            {/* <h3 className="text-xl font-semibold mb-4 text-pink-600">Apna College</h3> */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              <a href="https://www.youtube.com/watch?v=ZxKM3DCV2kE" target="_blank" rel="noopener noreferrer" className="bg-gray-50 rounded-xl shadow hover:shadow-lg overflow-hidden transition">
+                <img src="https://img.youtube.com/vi/ZxKM3DCV2kE/hqdefault.jpg" alt="DSA Course" className="w-full" />
+                <div className="p-4">
+                  <h4 className="font-semibold">DSA in Java</h4>
+                  <p className="text-sm text-gray-600">Complete Data Structures & Algorithms playlist.</p>
+                </div>
+              </a>
+              <a href="https://www.youtube.com/watch?v=Bm2YI5VtV2Y" target="_blank" rel="noopener noreferrer" className="bg-gray-50 rounded-xl shadow hover:shadow-lg overflow-hidden transition">
+                <img src="https://img.youtube.com/vi/Bm2YI5VtV2Y/hqdefault.jpg" alt="C++ DSA Course" className="w-full" />
+                <div className="p-4">
+                  <h4 className="font-semibold">C++ DSA Course</h4>
+                  <p className="text-sm text-gray-600">Complete guide to DSA in C++ from scratch.</p>
+                </div>
+              </a>
+              <a href="https://www.youtube.com/watch?v=ORxmtlB7b2U" target="_blank" rel="noopener noreferrer" className="bg-gray-50 rounded-xl shadow hover:shadow-lg overflow-hidden transition">
+                <img src="https://img.youtube.com/vi/ORxmtlB7b2U/hqdefault.jpg" alt="SQL Course" className="w-full" />
+                <div className="p-4">
+                  <h4 className="font-semibold">SQL for Beginners</h4>
+                  <p className="text-sm text-gray-600">Learn database queries in SQL for free.</p>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
       {/* Stats */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">

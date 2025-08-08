@@ -23,18 +23,18 @@ const JobSeekerDashboard = () => {
       setError(null) // Clear previous errors
       try {
         const res1 = await fetch(`http://localhost:5000/api/applications?userId=${user._id}`)
-        const res2 = await fetch(`http://localhost:5000/api/savedjobs?userId=${user._id}`)
+        // const res2 = await fetch(`http://localhost:5000/api/savedjobs?userId=${user._id}`)
 
         // Check for errors except 404 (which means no data)
         if (!res1.ok && res1.status !== 404) throw new Error('Applications fetch failed')
-        if (!res2.ok && res2.status !== 404) throw new Error('Saved jobs fetch failed')
+        // if (!res2.ok && res2.status !== 404) throw new Error('Saved jobs fetch failed')
 
         // Parse responses if ok
         const apps = res1.ok ? (await res1.json()).map(app => ({ ...app, id: app._id || app.id })) : []
-        const saved = res2.ok ? (await res2.json()).map(job => ({ ...job, id: job._id || job.id })) : []
+        // const saved = res2.ok ? (await res2.json()).map(job => ({ ...job, id: job._id || job.id })) : []
 
         setApplications(apps)
-        setSavedJobs(saved)
+        // setSavedJobs(saved)
       } catch (err) {
         console.error(err)
         setError('Failed to load dashboard data')
@@ -157,7 +157,7 @@ const JobSeekerDashboard = () => {
                     app.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-green-100 text-green-800'
                   }`}>{app.status}</span>
-                  <Link to={`/job/${app.jobId || app.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
+                  <Link to={`/job/${app.jobId?._id || app.jobId || app.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
                 </div>
               </div>
             ))}
@@ -186,7 +186,7 @@ const JobSeekerDashboard = () => {
                   app.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-green-100 text-green-800'
                 }`}>{app.status}</span>
-                <Link to={`/job/${app.jobId || app.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
+                <Link to={`/job/${app.jobId?._id || app.jobId || app.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
               </div>
             </div>
           </div>
@@ -209,7 +209,7 @@ const JobSeekerDashboard = () => {
                 <p className="text-sm text-gray-500">{job.location} • {job.salary}</p>
               </div>
               <div className="flex items-center space-x-2">
-                <Link to={`/job/${job.jobId || job.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
+                <Link to={`/job/${app.jobId?._id || app.jobId || app.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
                 <button onClick={() => handleRemoveSavedJob(job.jobId || job.id)} className="text-red-600 hover:text-red-700 text-sm">Remove</button>
                 <button onClick={() => handleApplyToJob(job)} className="text-green-600 hover:text-green-700 text-sm">Apply</button>
               </div>

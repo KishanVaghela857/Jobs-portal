@@ -263,12 +263,19 @@ const JobListings = () => {
 
                     <div className="text-right text-sm text-gray-500">
                       <div>Posted: {new Date(job.postedDate).toLocaleDateString()}</div>
-                      <Link
-                        to={`/job/${job._id}`}
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            alert('Please login to view job details.')
+                            navigate('/login')
+                          } else {
+                            navigate(`/job/${job._id}`)
+                          }
+                        }}
                         className="inline-block mt-2 text-white bg-green-600 hover:bg-green-700 px-4 py-1 rounded"
                       >
                         View Details
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>

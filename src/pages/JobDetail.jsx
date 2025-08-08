@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApplications } from '../context/ApplicationsContext';
+import axios from 'axios';
 import {
   MapPinIcon,
   BriefcaseIcon,
@@ -53,54 +54,59 @@ const JobDetail = () => {
     }));
   };
 
+
   const handleApply = async (e) => {
     e.preventDefault();
-
+  
     if (!application.coverLetter.trim()) {
       alert('Please enter a cover letter');
       return;
     }
-
+  
     if (!application.resume) {
       alert('Please upload your resume');
       return;
     }
-
+  
+    if (!job._id) {
+      alert('Job ID is missing');
+      return;
+    }
+  
     setApplying(true);
-
+  
     try {
       const formData = new FormData();
-      formData.append('userId', user._id);
-      formData.append('jobId', job._id || job.id);
+      formData.append('userId', user._id); // ✅ Required by backend
+      formData.append('jobId', job._id);
       formData.append('coverLetter', application.coverLetter);
       formData.append('resume', application.resume);
-
-      const res = await fetch(`${API_BASE_URL}/api/dashboard/apply-job`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          ...(user?.token && { Authorization: `Bearer ${user.token}` }),
-          // Note: Do NOT set Content-Type header when sending FormData!
-        },
-      });
-
-      if (!res.ok) throw new Error('Failed to submit application');
-
-      // Show success modal
+  
+      const token = localStorage.getItem('token');
+  
+      await axios.post(
+        'http://localhost:5000/api/dashboard/apply-job',
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+  
       setShowModal(true);
-
-      // Clear form inputs after successful submit
-      setApplication({
-        coverLetter: '',
-        resume: null,
-      });
+      setApplication({ coverLetter: '', resume: null });
     } catch (error) {
-      alert('Failed to submit application');
-      console.error(error);
+      console.error('Apply job error:', error);
+      alert(error.response?.data?.message || 'Failed to submit application');
     } finally {
       setApplying(false);
     }
   };
+  
+
+  
 
   if (loading) {
     return (
@@ -239,13 +245,14 @@ const JobDetail = () => {
                   You have already applied to this job.
                 </div>
               ) : (
-                <form onSubmit={handleApply} className="space-y-4">
+                <form onSubmit={handleApply} className="space-y-6 p-6 rounded-2xl shadow-lg max-w-xl mx-auto border border-gray-100">
+                  <h2 className="text-2xl font-semibold text-gray-800 mb-2">Apply for this Job</h2>
+                  <p className="text-sm text-gray-500 mb-4">Fill in the details below to submit your application.</p>
+
+                  {/* Cover Letter */}
                   <div>
-                    <label
-                      htmlFor="coverLetter"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Cover Letter
+                    <label htmlFor="coverLetter" className="block text-sm font-medium text-gray-700 mb-2">
+                      Cover Letter <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       id="coverLetter"
@@ -253,18 +260,16 @@ const JobDetail = () => {
                       rows={6}
                       value={application.coverLetter}
                       onChange={handleApplicationChange}
-                      className="input-field"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150"
                       placeholder="Tell us why you're interested in this position..."
                       required
                     />
                   </div>
 
+                  {/* Resume Upload */}
                   <div>
-                    <label
-                      htmlFor="resume"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Resume/CV
+                    <label htmlFor="resume" className="block text-sm font-medium text-gray-700 mb-2">
+                      Resume / CV <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="file"
@@ -272,22 +277,22 @@ const JobDetail = () => {
                       name="resume"
                       accept=".pdf,.doc,.docx"
                       onChange={handleApplicationChange}
-                      className="input-field"
+                      className="block w-full text-sm text-gray-700 border border-gray-300 rounded-lg cursor-pointer focus:outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition duration-150"
                       required
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Accepted formats: PDF, DOC, DOCX (Max 5MB)
-                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Accepted formats: PDF, DOC, DOCX (Max 5MB)</p>
                   </div>
 
+                  {/* Submit Button */}
                   <button
                     type="submit"
                     disabled={applying}
-                    className="w-full btn-primary disabled:opacity-50"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
                   >
                     {applying ? 'Submitting...' : 'Submit Application'}
                   </button>
                 </form>
+
               )}
             </div>
           ) : !user ? (
