@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
   try {
     let { email, password, role } = req.body;
     if (!email || !password || !role) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      if (!res.ok) throw new Error(data.message || data.error || 'Unknown error');
     }
 
     email = email.trim().toLowerCase();
