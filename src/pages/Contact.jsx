@@ -6,13 +6,16 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline'
 
+const user = JSON.parse(localStorage.getItem('user'));
+const employerId = user?._id; 
+
 const Contact = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    fullName: '',
+    emailAddress: '',
     subject: '',
-    message: ''
-  })
+    description: ''
+  });
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
@@ -23,26 +26,36 @@ const Contact = () => {
     })
   }
 
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      
+      // Add employerId here (replace with your actual ID or fetch it from context)
+      const payload = {
+        ...formData,
+        employerId: employerId
+      };
+      console.log(formData)
+  
       const res = await fetch(`${API_BASE_URL}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
+  
       if (!res.ok) throw new Error('Failed to submit contact form');
       setSubmitted(true);
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormData({ fullName: '', emailAddress: '', subject: '', description: '' });
     } catch (err) {
       alert('Failed to submit contact form');
     } finally {
       setLoading(false);
     }
   };
-
   const contactInfo = [
     {
       icon: <EnvelopeIcon className="h-6 w-6" />,
@@ -107,8 +120,8 @@ const Contact = () => {
             <input
               type="text"
               id="name"
-              name="name"
-              value={formData.name}
+              name="fullName"
+              value={formData.fullName}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="John Doe"
@@ -123,8 +136,8 @@ const Contact = () => {
             <input
               type="email"
               id="email"
-              name="email"
-              value={formData.email}
+              name="emailAddress"
+              value={formData.emailAddress}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="john@example.com"
@@ -155,9 +168,9 @@ const Contact = () => {
           </label>
           <textarea
             id="message"
-            name="message"
+            name="description"
             rows={6}
-            value={formData.message}
+            value={formData.description}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="Write your message here..."

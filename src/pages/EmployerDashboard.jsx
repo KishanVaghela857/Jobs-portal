@@ -84,8 +84,7 @@ const EmployerDashboard = () => {
       if (!userFromStorage || !userFromStorage.token || !userFromStorage.id) {
         throw new Error("Token or user ID not found in localStorage");
       }
-  
-      const token = userFromStorage.token;  // <-- Add this line
+
   
       const backendUrl = 'http://localhost:5000'; 
   

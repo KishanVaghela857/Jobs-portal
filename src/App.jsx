@@ -13,6 +13,7 @@ import Profile from './pages/Profile';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import ProtectedRoute from './components/ProtectedRoute';
+import './index.css';
 
 function App() {
   return (
