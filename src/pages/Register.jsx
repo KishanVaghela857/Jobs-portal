@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
+const API_URL = "http://localhost:5000/api"; // your backend URL
+
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -14,38 +16,114 @@ const Register = () => {
     phone: ''
   });
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
+  };
+
+  const sendVerificationCode = async () => {
+    if (!formData.email) {
+      setError('Please enter an email to verify');
+      return false;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/auth/send-verification-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email.trim().toLowerCase() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVerificationSent(true);
+        setError('');
+        alert('Verification code sent to your email.');
+        return true;
+      } else {
+        setError(data.message || 'Failed to send verification code.');
+        return false;
+      }
+    } catch {
+      setError('Server error sending verification code.');
+      return false;
+    }
+  };
+
+  const verifyCode = async () => {
+    if (!verificationCode) {
+      setError('Please enter the verification code');
+      return false;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/auth/verify-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email.trim().toLowerCase(),
+          code: verificationCode.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.message === 'Email verified successfully') {
+        setError('');
+        return true;
+      } else {
+        setError(data.error || data.message || 'Invalid verification code.');
+        return false;
+      }
+    } catch {
+      setError('Server error verifying code.');
+      return false;
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
-      setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setLoading(true);
+
+    if (!verificationSent) {
+      // Step 1: send verification code
+      const sent = await sendVerificationCode();
+      setLoading(false);
+      if (!sent) return;
+      // Inform user to enter code now
+      return;
+    }
+
+    // Step 2: verify code
+    const verified = await verifyCode();
+    if (!verified) {
       setLoading(false);
       return;
     }
 
+    // Step 3: register user
     try {
       const userData = {
         fullname: formData.name.trim(),
@@ -53,7 +131,7 @@ const Register = () => {
         password: formData.password.trim(),
         role: formData.userType,
         phone: formData.phone.trim(),
-        ...(formData.userType === 'employer' && { companyname: formData.companyName.trim() })
+        ...(formData.userType === 'employer' && { companyname: formData.companyName.trim() }),
       };
 
       const result = await register(userData);
@@ -63,7 +141,7 @@ const Register = () => {
       } else {
         setError(result.error || 'Registration failed');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred during registration');
     } finally {
       setLoading(false);
@@ -88,12 +166,12 @@ const Register = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* User Type */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* User Type */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">I am a</label>
               <div className="flex gap-4">
-                {['jobseeker', 'employer'].map((type) => (
+                {['jobseeker', 'employer'].map(type => (
                   <label
                     key={type}
                     className={`flex-1 cursor-pointer border rounded-lg px-4 py-3 text-sm font-medium text-center transition shadow-sm ${
@@ -109,6 +187,7 @@ const Register = () => {
                       checked={formData.userType === type}
                       onChange={handleChange}
                       className="hidden"
+                      disabled={verificationSent} // disable change after verification sent
                     />
                     {type === 'jobseeker' ? 'Job Seeker' : 'Employer'}
                   </label>
@@ -127,6 +206,7 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Your full name"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-blue-500 focus:outline-none"
+                disabled={verificationSent}
               />
             </div>
 
@@ -142,6 +222,7 @@ const Register = () => {
                   onChange={handleChange}
                   placeholder="Your company name"
                   className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-blue-500 focus:outline-none"
+                  disabled={verificationSent}
                 />
               </div>
             )}
@@ -157,8 +238,23 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="you@example.com"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-blue-500 focus:outline-none"
+                disabled={verificationSent}
               />
             </div>
+
+            {/* Verification Code input (shown if code sent) */}
+            {verificationSent && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  placeholder="Enter code received via email"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-indigo-500 focus:outline-none"
+                />
+              </div>
+            )}
 
             {/* Phone */}
             <div>
@@ -171,6 +267,7 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Enter phone number"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-blue-500 focus:outline-none"
+                disabled={verificationSent}
               />
             </div>
 
@@ -185,11 +282,12 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Password"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:ring-blue-500 focus:outline-none"
+                disabled={verificationSent}
               />
               <button
                 type="button"
                 className="absolute right-3 top-9 text-gray-400"
-                onClick={() => setShowPassword((prev) => !prev)}
+                onClick={() => setShowPassword(prev => !prev)}
               >
                 {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
               </button>
@@ -206,31 +304,48 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Re-enter password"
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 focus:ring-blue-500 focus:outline-none"
+                disabled={verificationSent}
               />
               <button
                 type="button"
                 className="absolute right-3 top-9 text-gray-400"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                onClick={() => setShowConfirmPassword(prev => !prev)}
               >
                 {showConfirmPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
-          {/* Submit */}
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-4 bg-blue-600 text-white py-3 rounded-xl text-base font-medium hover:bg-blue-700 transition disabled:opacity-50"
+            className={`w-full mt-4 py-3 rounded-xl text-base font-medium transition ${
+              loading
+                ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {loading
+              ? verificationSent
+                ? 'Verifying & Registering...'
+                : 'Sending Verification Code...'
+              : verificationSent
+              ? 'Verify Code & Register'
+              : 'Send Verification Code'}
           </button>
 
           {/* Terms */}
           <p className="text-xs text-center text-gray-500 mt-4">
             By signing up, you agree to our{' '}
-            <Link to="/terms" className="text-blue-600 hover:underline">Terms</Link> and{' '}
-            <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+            <Link to="/terms" className="text-blue-600 hover:underline">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link to="/privacy" className="text-blue-600 hover:underline">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </form>
       </div>

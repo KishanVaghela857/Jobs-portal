@@ -3,7 +3,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
 
-
 const userSchema = new mongoose.Schema({
   role: {
     type: String,
@@ -11,10 +10,15 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   fullname: { type: String, required: true },
-  companyname: { type: String }, // only for employer
+  companyname: { type: String },
   email: { type: String, required: true, unique: true },
   phone: { type: String, required: true },
   password: { type: String, required: true },
+
+  // New fields for email verification
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationCode: { type: String },
+  emailVerificationExpires: { type: Date }
 }, { timestamps: true });
 
 // Password hashing before save
