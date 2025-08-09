@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 
 // Register route
 router.post('/register', async (req, res) => {
@@ -42,32 +43,39 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
-// Login route
 router.post('/login', async (req, res) => {
   try {
     let { email, password, role } = req.body;
+
+    // Basic validation
     if (!email || !password || !role) {
-      if (!res.ok) throw new Error(data.message || data.error || 'Unknown error');
+      return res.status(400).json({ error: 'Email, password, and role are required' });
     }
 
     email = email.trim().toLowerCase();
     role = role.trim().toLowerCase();
     password = password.trim();
 
+    // Find user by email and role
     const user = await User.findOne({ email, role });
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    // Compare password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate token
-    const token = user.generateToken();
+    // Generate JWT (directly here instead of relying on model)
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
+    // Send response
     res.status(200).json({
       message: 'Login successful',
       token,
@@ -85,6 +93,5 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 module.exports = router;

@@ -1,21 +1,20 @@
-// backend/middleware/auth.js
 const jwt = require('jsonwebtoken');
 
-
 const verifyToken = (req, res, next) => {
-  const token = req.header('Authorization')?.split(' ')[1];
-  console.log('Token received:', token);
-  if (!token) return res.status(401).json({ error: 'Access Denied' });
+  const authHeader = req.headers.authorization;
 
-  try {
-    const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
-    next();
-  } catch (err) {
-    console.error('JWT verification error:', err.message);
-    res.status(400).json({ error: 'Invalid Token' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization header missing or invalid' });
   }
+
+  const token = authHeader.split(' ')[1];
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(403).json({ message: 'Invalid or expired token' });
+
+    req.user = decoded; // This will have your user ID & role
+    next();
+  });
 };
 
-
-module.exports = { verifyToken };
+module.exports = {verifyToken};

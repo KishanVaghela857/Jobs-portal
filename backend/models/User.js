@@ -40,7 +40,7 @@ userSchema.methods.generateToken = function() {
       fullname: this.fullname,
     },
     JWT_SECRET,
-    { expiresIn: '24h' }
+    { expiresIn: '7d' }
   );
 };
 

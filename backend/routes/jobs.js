@@ -42,9 +42,12 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Post a job
+// post a job
 router.post('/', verifyToken, async (req, res) => {
+  console.log('Decoded token user:', req.user);
+
   const employerId = req.user._id || req.user.id || req.user.userId;
+
   if (!employerId) return res.status(400).json({ message: 'employerId missing from token' });
 
   try {
@@ -63,10 +66,10 @@ router.post('/', verifyToken, async (req, res) => {
     const company = employer?.companyname || employer?.fullname || '';
     const companyDescription = employer?.companyDescription || '';
 
-    if (!title || !description || !location || !type) {
+    if (!title || !description || !location || !type) { {
       return res.status(400).json({ error: 'Required fields are missing' });
     }
-
+  }
     const newJob = await Job.create({
       title,
       description,
@@ -80,6 +83,7 @@ router.post('/', verifyToken, async (req, res) => {
       company,
       companyDescription
     });
+  
 
     res.status(201).json(newJob);
   } catch (err) {
@@ -87,6 +91,7 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(500).json({ message: err.message || 'Server error' });
   }
 });
+
 
 // GET jobs by employerId
 router.get('/employer/:employerId', async (req, res) => {

@@ -76,39 +76,28 @@ const EmployerDashboard = () => {
 
   const fetchApplicants = async () => {
     try {
-      // Get user from localStorage
-      const userFromStorage = localStorage.getItem('user')
-        ? JSON.parse(localStorage.getItem('user'))
-        : null;
+      const token = localStorage.getItem('token'); // must be set during login
   
-      if (!userFromStorage || !userFromStorage.token || !userFromStorage.id) {
-        throw new Error("Token or user ID not found in localStorage");
-      }
-
-  
-      const backendUrl = 'http://localhost:5000'; 
-  
-      const response = await fetch(`${backendUrl}/api/applications/employer/${userFromStorage.id}`, {
+      const res = await fetch('http://localhost:5000/api/applicants', {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...(user?.token && { Authorization: `Bearer ${user.token}` }),
+          'Authorization': `Bearer ${token}`, // ✅ token included
         },
       });
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Server Error:", errorData);
-        throw new Error(errorData.message || 'Failed to fetch applicants');
+      if (!res.ok) {
+        const errData = await res.json();
+        console.error('Server Error:', errData);
+        return;
       }
   
-      const data = await response.json();
-      setApplicants(data);
+      const data = await res.json();
+      console.log('Applicants:', data);
     } catch (err) {
-      console.error("Fetch Applicants Error:", err.message);
-      setApplicants([]);
+      console.error('Fetch Applicants Error:', err.message);
     }
   };
-  
   
   useEffect(() => {
     if (user?._id) {
