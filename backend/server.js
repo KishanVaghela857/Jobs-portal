@@ -2,7 +2,6 @@ const dotenv = require('dotenv');
 const express = require('express');
 const connectDB = require('./config/db');
 const cors = require('cors');
-const jobsRouter = require('./routes/jobs');
 
 dotenv.config();
 connectDB();
@@ -15,17 +14,18 @@ app.use(express.json());
 const authRoutes = require('./routes/auth');
 const jobsRoutes = require('./routes/jobs');
 const applicantRoutes = require('./routes/applicant');
+const applicationRoutes = require('./routes/applications'); // <- important
 const dashboardRoutes = require('./routes/dashboard');
-const applicationRoutes = require('./routes/applications');
 const contactRoutes = require('./routes/contact');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobsRoutes);
-app.use('/api/applicant', applicantRoutes);
+app.use('/api/applicants', applicantRoutes);
+app.use('/api/applications', applicationRoutes);  // Make sure applications route is used once
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/applications', applicationRoutes);
 app.use('/api/contact', contactRoutes);
+
 app.use('/uploads', express.static('uploads'));
 
 const PORT = process.env.PORT || 5000;

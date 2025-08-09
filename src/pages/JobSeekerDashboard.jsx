@@ -32,6 +32,7 @@ const JobSeekerDashboard = () => {
         // Parse responses if ok
         const apps = res1.ok ? (await res1.json()).map(app => ({ ...app, id: app._id || app.id })) : []
         // const saved = res2.ok ? (await res2.json()).map(job => ({ ...job, id: job._id || job.id })) : []
+        console.log(apps)
 
         setApplications(apps)
         // setSavedJobs(saved)
@@ -105,7 +106,7 @@ const JobSeekerDashboard = () => {
   const tabs = [
     { id: 'overview', name: 'Overview', icon: UserIcon },
     { id: 'applications', name: 'My Applications', icon: DocumentTextIcon },
-    { id: 'saved', name: 'Saved Jobs', icon: BookmarkIcon },
+    // { id: 'saved', name: 'Saved Jobs', icon: BookmarkIcon },
     { id: 'profile', name: 'Profile', icon: UserIcon }
   ]
 
@@ -131,10 +132,10 @@ const JobSeekerDashboard = () => {
             <div className="text-3xl font-bold text-indigo-600 mb-2">{applications.length}</div>
             <div className="text-gray-600">Applications</div>
           </div>
-          <div className="bg-white p-6 shadow rounded-xl text-center">
+          {/* <div className="bg-white p-6 shadow rounded-xl text-center">
             <div className="text-3xl font-bold text-green-600 mb-2">{savedJobs.length}</div>
             <div className="text-gray-600">Saved Jobs</div>
-          </div>
+          </div> */}
           <div className="bg-white p-6 shadow rounded-xl text-center">
             <div className="text-3xl font-bold text-blue-600 mb-2">5</div>
             <div className="text-gray-600">Profile Views</div>
@@ -195,30 +196,30 @@ const JobSeekerDashboard = () => {
     </div>
   )
 
-  const renderSavedJobs = () => (
-    <div className="space-y-4">
-      {savedJobs.length === 0 ? (
-        <p className="text-center text-gray-500">No saved jobs found.</p>
-      ) : (
-        savedJobs.map(job => (
-          <div key={job._id || job.id} className="bg-white p-6 shadow rounded-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                <p className="text-gray-600">{job.company}</p>
-                <p className="text-sm text-gray-500">{job.location} • {job.salary}</p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Link to={`/job/${app.jobId?._id || app.jobId || app.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
-                <button onClick={() => handleRemoveSavedJob(job.jobId || job.id)} className="text-red-600 hover:text-red-700 text-sm">Remove</button>
-                <button onClick={() => handleApplyToJob(job)} className="text-green-600 hover:text-green-700 text-sm">Apply</button>
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  )
+  // const renderSavedJobs = () => (
+  //   <div className="space-y-4">
+  //     {savedJobs.length === 0 ? (
+  //       <p className="text-center text-gray-500">No saved jobs found.</p>
+  //     ) : (
+  //       savedJobs.map(job => (
+  //         <div key={job._id || job.id} className="bg-white p-6 shadow rounded-xl">
+  //           <div className="flex items-center justify-between">
+  //             <div>
+  //               <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+  //               <p className="text-gray-600">{job.company}</p>
+  //               <p className="text-sm text-gray-500">{job.location} • {job.salary}</p>
+  //             </div>
+  //             <div className="flex items-center space-x-2">
+  //               <Link to={`/job/${app.jobId?._id || app.jobId || app.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm">View Job</Link>
+  //               <button onClick={() => handleRemoveSavedJob(job.jobId || job.id)} className="text-red-600 hover:text-red-700 text-sm">Remove</button>
+  //               <button onClick={() => handleApplyToJob(job)} className="text-green-600 hover:text-green-700 text-sm">Apply</button>
+  //             </div>
+  //           </div>
+  //         </div>
+  //       ))
+  //     )}
+  //   </div>
+  // )
 
   const renderProfile = () => (
     <div className="bg-white p-6 shadow rounded-xl">
@@ -231,7 +232,7 @@ const JobSeekerDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-          <p className="text-gray-900">{user?.name || 'Not provided'}</p>
+          <p className="text-gray-900">{user?.fullname || 'Not provided'}</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
